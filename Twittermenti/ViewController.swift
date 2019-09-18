@@ -3,7 +3,7 @@
 //  Twittermenti
 //
 //  Created by Amerigo Mancino on 17/09/2019.
-//  Copyright © 2018 London App Brewery. All rights reserved.
+//  Copyright © 2019 Amerigo Mancino. All rights reserved.
 //
 
 import UIKit
