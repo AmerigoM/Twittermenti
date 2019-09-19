@@ -11,7 +11,7 @@ import SwifteriOS
 import CoreML
 import SwiftyJSON
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, UITextFieldDelegate {
     
     @IBOutlet weak var backgroundView: UIView!
     @IBOutlet weak var textField: UITextField!
@@ -26,20 +26,20 @@ class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // keep api keys secure by reading them from an external plist file
         swifter = Swifter(consumerKey: valueForAPIKey(named: "ApiKey"), consumerSecret: valueForAPIKey(named: "ApiSecret"))
-    }
-    
-    // The routine looks for the Secrets.plist file in the application’s resource bundle,
-    // loads it as an NSDictionary and then looks up the value for the given key as a String.
-    func valueForAPIKey(named keyname:String) -> String {
-        let filePath = Bundle.main.path(forResource: "Secrets", ofType: "plist")
-        let plist = NSDictionary(contentsOfFile:filePath!)
-        let value = plist?.object(forKey: keyname) as! String
-        return value
-    }
+        
+        textField.delegate = self
+        
+        // add observers for adjusting the constraints when the keyboard raises up or it's dismissed
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
+        
+        // add selector for dismissing the keyboard when tapping outside
+        let tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(UIInputViewController.dismissKeyboard))
+        view.addGestureRecognizer(tap)
 
-    @IBAction func predictPressed(_ sender: Any) {
-        fetchTweets()
     }
     
     func fetchTweets() {
@@ -108,5 +108,48 @@ class ViewController: UIViewController {
         }
     }
     
+    
+    @IBAction func predictPressed(_ sender: Any) {
+        fetchTweets()
+    }
+    
+    // MARK: - HANDLE THE API KEYS
+    
+    // The routine looks for the Secrets.plist file in the application’s resource bundle,
+    // loads it as an NSDictionary and then looks up the value for the given key as a String.
+    func valueForAPIKey(named keyname:String) -> String {
+        let filePath = Bundle.main.path(forResource: "Secrets", ofType: "plist")
+        let plist = NSDictionary(contentsOfFile:filePath!)
+        let value = plist?.object(forKey: keyname) as! String
+        return value
+    }
+    
+    // MARK: - KEYBOARD DELEGATE METHODS AND SELECTORS
+    
+    @objc func keyboardWillShow(notification: NSNotification) {
+        if let keyboardSize = (notification.userInfo?[UIResponder.keyboardFrameBeginUserInfoKey] as? NSValue)?.cgRectValue {
+            if self.view.frame.origin.y == 0 {
+                self.view.frame.origin.y -= keyboardSize.height - 100
+            }
+        }
+    }
+    
+    @objc func keyboardWillHide(notification: NSNotification) {
+        if self.view.frame.origin.y != 0 {
+            self.view.frame.origin.y = 0
+        }
+    }
+    
+    // triggers when the user presses the return button on the keyboard
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        self.view.endEditing(true)
+        self.fetchTweets()
+        return false
+    }
+    
+    // triggers when the user tap outside the keyboard and dismiss it
+    @objc func dismissKeyboard() {
+        view.endEditing(true)
+    }
 }
 
